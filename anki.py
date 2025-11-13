@@ -46,6 +46,10 @@ class Anki:
 
 
 class Formatter:
+    CLEANUP_PATTERN = re.compile(r'<br>|</?div>|&nbsp;')
+    PUNCTUATION_PATTERN = re.compile(r'([.!?])(?!\s)')
+    WHITESPACE_PATTERN = re.compile(r'\s{2,}')
+    
     @staticmethod
     def format_listening_html(string):
         """
@@ -58,7 +62,7 @@ class Formatter:
             str: 整形された文字列
         """
         # 不要なタグや空白を削除
-        string = re.sub(r'<br>|</?div>|&nbsp;', '', string)
+        string = Formatter.CLEANUP_PATTERN.sub('', string)
 
         # 特定の文字列を保護
         patterns = [
@@ -77,11 +81,7 @@ class Formatter:
                 protected[placeholder] = match
 
         # ., !, ?のあとにスペースを入れる
-        string = re.sub(
-            r'([.!?])(?!\s)',
-            r'\1 ',
-            string
-        )
+        string = Formatter.PUNCTUATION_PATTERN.sub(r'\1 ', string)
 
 
         # 保護したタグを元に戻す
@@ -89,7 +89,7 @@ class Formatter:
             string = string.replace(placeholder, original)
 
         # 文間の空白を1つに統一
-        string = re.sub(r'\s{2,}', ' ', string)
+        string = Formatter.WHITESPACE_PATTERN.sub(' ', string)
         return string.strip()
 
 
