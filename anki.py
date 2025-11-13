@@ -6,14 +6,37 @@ class Anki:
     def __init__(self, port=8765):
         self.port = port
 
-    def _post(self, action, params, version=6):
+    def _post(self, action, params, version=6, timeout=10):
         """AnkiConnectにリクエストを送信"""
-        response = requests.post(f"http://localhost:{self.port}", json={
-            "action": action,
-            "version": version,
-            "params": params
-        })
-        data = response.json()
+        try:
+            response = requests.post(
+                f"http://localhost:{self.port}",
+                json={
+                    "action": action,
+                    "version": version,
+                    "params": params
+                },
+                timeout=timeout
+            )
+            response.raise_for_status()
+        except requests.exceptions.Timeout:
+            raise Exception(
+                f"AnkiConnect request timed out after {timeout} seconds. "
+                f"Is Anki running with AnkiConnect on port {self.port}?"
+            )
+        except requests.exceptions.ConnectionError:
+            raise Exception(
+                f"Failed to connect to AnkiConnect on port {self.port}. "
+                f"Is Anki running with AnkiConnect enabled?"
+            )
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"AnkiConnect request failed: {e}")
+        
+        try:
+            data = response.json()
+        except ValueError as e:
+            raise Exception(f"Failed to decode JSON response from AnkiConnect: {e}")
+        
         if data.get("error"):
             raise Exception(f"AnkiConnect Error: {data['error']}")
         return data.get("result")
